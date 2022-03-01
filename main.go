@@ -41,9 +41,14 @@ func parseArgs(args []string) (int, int) {
 		}
 	}
 
+	// if provided in an unexpected order, swap
+	if defStart > defEnd {
+		defStart, defEnd = defEnd, defStart
+	}
 	return defStart, defEnd
 }
 
+// get the current hour relative to EST
 func getEstHour() int {
 	t := time.Now()
 	loc, err := time.LoadLocation("EST")
@@ -55,6 +60,7 @@ func getEstHour() int {
 	return nt.Hour()
 }
 
+// get stage rules based on the provided hour
 func getRules(h int) []stageRule {
 	var rules []stageRule
 	if h%24 < 12 {
@@ -75,6 +81,7 @@ func getRules(h int) []stageRule {
 	return rules
 }
 
+// run a set of stage rules from start to end
 func runStage(start, end int, rules []stageRule) []string {
 	output := []string{}
 	for i := start; i <= end; i++ {
