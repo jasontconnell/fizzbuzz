@@ -3,6 +3,8 @@ package main
 import (
 	"strings"
 	"testing"
+
+	"github.com/jasontconnell/fizzbuzz/process"
 )
 
 func TestRules(t *testing.T) {
@@ -16,16 +18,16 @@ func TestRules(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		rules := getRules(test.hour)
+		rules := process.GetRules(test.hour)
 		if len(rules) == 0 {
 			t.Log("No rules returned for hour", test.hour)
 			t.Fail()
 		}
 		first := rules[0]
-		t.Log("Time:", test.hour, "EST. Expected first:", test.expected, "Actual first:", first.s)
+		t.Log("Time:", test.hour, "EST. Expected first:", test.expected, "Actual first:", first.Value)
 
-		if first.s != test.expected {
-			t.Log("failed", first.s)
+		if first.Value != test.expected {
+			t.Log("failed", first.Value)
 			t.Fail()
 		}
 	}
@@ -49,8 +51,8 @@ func TestRunStage(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		stg := getRules(test.hour)
-		out := runStage(1, 100, stg)
+		stg := process.GetRules(test.hour)
+		out := process.RunStage(1, 100, stg)
 		res := out[test.position-1]
 
 		t.Log("Time:", test.hour, "EST. Position", test.position, "looking for", test.find, "found", res, " expected outcome:", test.outcome)

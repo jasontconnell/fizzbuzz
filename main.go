@@ -1,33 +1,64 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
-)
 
-type stageRule struct {
-	mod    int
-	s      string
-	format bool
-}
+	"github.com/jasontconnell/fizzbuzz/process"
+)
 
 func main() {
 	start := time.Now()
-	stg := getRules(getEstHour())
+	rnglow, rnghigh, webmode := parseArgs(os.Args)
 
-	rnglow, rnghigh := parseArgs(os.Args)
-
-	out := runStage(rnglow, rnghigh, stg)
-	for _, s := range out {
-		fmt.Println(s)
+	if !webmode {
+		stg := process.GetRules(process.GetEstHour())
+		out := process.RunStage(rnglow, rnghigh, stg)
+		for _, s := range out {
+			fmt.Println(s)
+		}
+		log.Println("finished", time.Since(start))
+	} else {
+		log.Println("starting listening on :5678")
+		startWeb()
 	}
-	fmt.Println("finished", time.Since(start))
 }
 
-func parseArgs(args []string) (int, int) {
+func startWeb() {
+	h := func(resp http.ResponseWriter, req *http.Request) {
+		if req.Method == http.MethodGet {
+			q := req.URL.Query()
+			start, err := strconv.Atoi(q.Get("start"))
+			if err != nil {
+				start = 1
+			}
+
+			end, err := strconv.Atoi(q.Get("end"))
+			if err != nil {
+				end = 100
+			}
+
+			stg := process.GetRules(process.GetEstHour())
+			output := process.RunStage(start, end, stg)
+
+			enc := json.NewEncoder(resp)
+			enc.Encode(output)
+		}
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/fizzbuzz", h)
+	mux.Handle("/", http.FileServer(http.Dir("./")))
+	http.ListenAndServe(":5678", mux)
+}
+
+func parseArgs(args []string) (int, int, bool) {
 	defStart, defEnd := 1, 100
+	web := false
 	if len(args) == 3 {
 		defStart, _ = strconv.Atoi(args[1])
 		defEnd, _ = strconv.Atoi(args[2])
@@ -39,62 +70,8 @@ func parseArgs(args []string) (int, int) {
 		if defEnd > 100 {
 			defEnd = 100
 		}
+	} else if len(args) == 2 && args[1] == "web" {
+		web = true
 	}
-
-	// if provided in an unexpected order, swap
-	if defStart > defEnd {
-		defStart, defEnd = defEnd, defStart
-	}
-	return defStart, defEnd
-}
-
-// get the current hour relative to EST
-func getEstHour() int {
-	t := time.Now()
-	loc, err := time.LoadLocation("EST")
-	if err != nil || t.Location().String() == "EST" {
-		return t.Hour()
-	}
-
-	nt := t.In(loc)
-	return nt.Hour()
-}
-
-// get stage rules based on the provided hour
-func getRules(h int) []stageRule {
-	var rules []stageRule
-	if h%24 < 12 {
-		rules = []stageRule{
-			{mod: 4, s: "Plong", format: false},
-			{mod: 2, s: "Pling", format: false},
-			{mod: 1, s: "%d", format: true},
-		}
-	} else {
-		rules = []stageRule{
-			{mod: 15, s: "FizzBuzz", format: false},
-			{mod: 5, s: "Buzz", format: false},
-			{mod: 3, s: "Fizz", format: false},
-			{mod: 1, s: "%d", format: true},
-		}
-	}
-
-	return rules
-}
-
-// run a set of stage rules from start to end
-func runStage(start, end int, rules []stageRule) []string {
-	output := []string{}
-	for i := start; i <= end; i++ {
-		for _, rule := range rules {
-			if i%rule.mod == 0 {
-				val := rule.s
-				if rule.format {
-					val = fmt.Sprintf(val, i)
-				}
-				output = append(output, fmt.Sprintf("%d == '%s'", i, val))
-				break
-			}
-		}
-	}
-	return output
+	return defStart, defEnd, web
 }

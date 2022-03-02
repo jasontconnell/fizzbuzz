@@ -1,0 +1,55 @@
+<html lang="en">
+    <head>
+        <title>FizzBuzz!</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" />
+    </head>
+    <body>
+        <div class="container">
+            <h1>FizzBuzz!</h1>
+            <form method="POST" action="/fizzbuzz">
+                <div class="form-floating mb-3">
+                    <input type="number" class="form-control" id="start" name="start" placeholder="1">
+                    <label for="floatingInput">Start</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <input type="number" class="form-control" id="end" name="end" placeholder="100">
+                    <label for="floatingInput">End</label>
+                </div>
+
+                <button id="btnFizzBuzz" type="button" class="btn btn-primary">FizzBuzz!</button>
+            </form>
+
+            <div class="output">
+            </div>
+        </div>
+    </body>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            let button = document.querySelector("#btnFizzBuzz");
+
+            button.addEventListener("click", (e) => {
+                let start = document.querySelector("#start");
+                let end = document.querySelector("#end")
+                let url = "/fizzbuzz?start=" + start.value + "&end=" + end.value;
+
+                // clear nodes
+                let output = document.querySelector(".output");
+                while (output.firstChild != null)
+                    output.firstChild.remove();
+
+                window
+                    .fetch(url)
+                    .then(res => res.json())
+                    .then(res => {
+                        res.forEach(value => {
+                            let node = document.createElement("div");
+                            node.className = ""
+                            node.innerHTML = value;
+                            output.append(node);
+                        })
+                    });
+            })
+        })
+    </script>
+</html>
